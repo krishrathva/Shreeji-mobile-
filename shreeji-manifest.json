@@ -1,0 +1,15 @@
+{
+  "name": "Shreeji Mobile Shop, Bodeli",
+  "short_name": "Shreeji Mobile",
+  "description": "Shreeji Mobile Shop, Bodeli - mobile list, offers ane 24 hapta calculator",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    { "src": "shreeji-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "shreeji-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

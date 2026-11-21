@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="shreeji-manifest.json">
+    <link rel="apple-touch-icon" href="shreeji-icon-192.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Shreeji Mobile">
+    <title>Shreeji Mobile Shop, Bodeli</title>
+    <!-- Load Tailwind CSS for responsive, modern mobile-first styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <!-- Load Google Fonts: Inter & Noto Sans Gujarati for crisp bilingual typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Gujarati:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans Gujarati', sans-serif;
+            background-color: #0f172a;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Custom scrollbar hiding for horizontal brand filter pills */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Smooth range slider styling */
+        input[type="range"] {
+            accent-color: #f97316;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex justify-center bg-slate-950 text-slate-900">
+
+    <!-- Mobile App Shell Container (Responsive: full width on mobile, sleek app frame on desktop) -->
+    <div class="w-full max-w-md bg-slate-50 min-h-screen flex flex-col shadow-2xl relative overflow-x-hidden">
+
+        <!-- Custom Toast Notification Box (Replaces alert() for clean UX) -->
+        <div id="toastBox" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 hidden max-w-xs w-[90%] bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-orange-500/40 text-sm font-medium flex items-center gap-2 transition-all duration-300">
+            <span id="toastIcon">✅</span>
+            <span id="toastMessage">Action completed</span>
+        </div>
+
+        <!-- WhatsApp Inquiry Preview Modal -->
+        <div id="waModal" class="fixed inset-0 z-50 hidden bg-slate-950/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+            <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-slate-100 animate-fade-in">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-9 h-9 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg">💬</span>
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-base">WhatsApp Inquiry</h3>
+                            <p class="text-xs text-slate-500">Shreeji Mobile Shop, Bodeli</p>
+                        </div>
+                    </div>
+                    <button onclick="closeWaModal()" class="p-2 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 text-sm font-bold">✕</button>
+                </div>
+
+                <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 mb-4">
+                    <p class="text-xs font-semibold text-emerald-800 mb-1">તૈયાર થયેલો મેસેજ (Ready Message):</p>
+                    <p id="waPreviewText" class="text-sm text-slate-800 whitespace-pre-line leading-relaxed"></p>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <a id="waDirectLink" href="#" target="_blank" rel="noopener noreferrer" onclick="showToast('WhatsApp પર મેસેજ ખુલી રહ્યો છે...', '💬')" class="w-full py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm text-center shadow-lg shadow-emerald-600/25 transition">
+                        Open WhatsApp & Send 🚀
+                    </a>
+                    <button onclick="copyWaMessage()" class="w-full py-2.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition">
+                        📋 મેસેજ કોપી કરો (Copy Message)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1. STORE HEADER & BRANDING -->
+        <header class="bg-gradient-to-br from-slate-900 via-slate-900 to-orange-950 text-white pt-4 pb-5 px-4 rounded-b-3xl shadow-lg sticky top-0 z-30">
+            <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <!-- Brand Emblem / Logo Badge -->
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-400 p-0.5 shadow-md flex-shrink-0">
+                        <div class="w-full h-full bg-slate-900 rounded-[14px] flex flex-col items-center justify-center">
+                            <span class="text-lg leading-none">📱</span>
+                            <span class="text-[9px] font-extrabold text-amber-400 tracking-wider mt-0.5">SHREEJI</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <h1 class="font-extrabold text-base sm:text-lg tracking-tight text-white">Shreeji Mobile Shop</h1>
+                            <!-- Verified Badge -->
+                            <span title="Verified Local Store" class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-sky-500 text-white text-[10px] font-bold">✓</span>
+                        </div>
+                        <p class="text-xs text-amber-300 font-medium">📍 Bodeli • ભયલુ ભાઈ (Dhrumit Thakkar)</p>
+                    </div>
+                </div>
+                <!-- Quick Call / Location Pill -->
+                <button onclick="switchTab('store')" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-semibold text-amber-200 transition flex-shrink-0">
+                    📍 Bodeli
+                </button>
+            </div>
+
+            <!-- Highlight Offer Strip -->
+            <div class="mt-3.5 bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl p-2.5 px-3.5 text-slate-950 flex items-center justify-between shadow-md">
+                <div>
+                    <p class="text-xs font-extrabold uppercase tracking-wide flex items-center gap-1">
+                        <span>🍎 Apple 24 હપ્તા • 0% Down Payment</span>
+                    </p>
+                    <p class="text-[11px] font-semibold text-slate-900/90 mt-0.5">બોડેલીની નં.૧ મોબાઈલ શોપ • Best Deals & Gifts</p>
+                </div>
+                <span class="bg-slate-900 text-amber-400 text-[10px] font-extrabold px-2.5 py-1 rounded-xl uppercase">Live Offers</span>
+            </div>
+        </header>
+
+        <!-- MAIN SCROLLABLE CONTENT AREA -->
+        <main class="flex-1 px-4 pt-4 pb-24 space-y-4">
+
+            <!-- ==================== TAB 1: MOBILES & OFFERS ==================== -->
+            <section id="tab-mobiles" class="space-y-4">
+                <!-- Search Input -->
+                <div class="relative">
+                    <input id="searchInput" type="text" oninput="renderMobiles()" placeholder="ફોન શોધો (દા.ત. iPhone 15, Samsung, Vivo)..." class="w-full pl-10 pr-4 py-3 rounded-2xl bg-white border border-slate-200 text-sm focus:outline-none focus:border-orange-500 shadow-sm">
+                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base">🔍</span>
+                </div>
+
+                <!-- Brand Filter Pills -->
+                <div id="brandPills" class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                    <!-- Pills rendered dynamically via JS -->
+                </div>
+
+                <!-- Section Heading & Count -->
+                <div class="flex items-center justify-between">
+                    <h2 class="font-bold text-slate-800 text-sm">📱 ઉપલબ્ધ મોબાઈલ્સ અને ઓફર્સ</h2>
+                    <span id="mobileCount" class="text-xs font-semibold text-orange-600 bg-orange-100 px-2.5 py-0.5 rounded-full">0 Models</span>
+                </div>
+
+                <!-- Mobiles Grid / Cards Container -->
+                <div id="mobilesList" class="space-y-3.5">
+                    <!-- Product cards injected by JS -->
+                </div>
+            </section>
+
+            <!-- ==================== TAB 2: EMI CALCULATOR ==================== -->
+            <section id="tab-emi" class="hidden space-y-4">
+                <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200/80">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 class="font-extrabold text-slate-900 text-base">🧮 હપ્તા કેલ્ક્યુલેટર (EMI)</h2>
+                            <p class="text-xs text-slate-500">ફોનની કિંમત અને મહિના પસંદ કરીને હપ્તો જાણો</p>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-xl bg-amber-100 text-amber-800 text-xs font-bold">0% Offer Ready</span>
+                    </div>
+
+                    <!-- Monthly EMI Result Card -->
+                    <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-4 mb-5 shadow-md">
+                        <p class="text-xs text-slate-300 font-medium">અંદાજિત મહિનાનો હપ્તો (Monthly EMI)</p>
+                        <div class="flex items-baseline gap-2 mt-1">
+                            <span id="emiMonthlyDisplay" class="text-3xl font-extrabold text-amber-400">₹2,917</span>
+                            <span class="text-xs text-slate-300">/ મહિનો</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-white/10 text-xs">
+                            <div>
+                                <p class="text-slate-400 text-[11px]">ફોન કિંમત</p>
+                                <p id="emiSummaryPrice" class="font-bold text-white mt-0.5">₹70,000</p>
+                            </div>
+                            <div>
+                                <p class="text-slate-400 text-[11px]">ડાઉન પેમેન્ટ</p>
+                                <p id="emiSummaryDown" class="font-bold text-emerald-400 mt-0.5">₹0</p>
+                            </div>
+                            <div>
+                                <p class="text-slate-400 text-[11px]">કુલ લોન રકમ</p>
+                                <p id="emiSummaryLoan" class="font-bold text-amber-300 mt-0.5">₹70,000</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="space-y-4">
+                        <!-- Phone Price -->
+                        <div>
+                            <div class="flex justify-between text-xs font-bold text-slate-700 mb-1.5">
+                                <label for="emiPriceInput">ફોનની કિંમત (Phone Price ₹)</label>
+                                <span id="emiPriceLabel" class="text-orange-600">₹70,000</span>
+                            </div>
+                            <input id="emiPriceSlider" type="range" min="5000" max="160000" step="1000" value="70000" oninput="syncEmiFromSlider('price')" class="w-full cursor-pointer">
+                            <input id="emiPriceInput" type="number" min="1000" max="300000" value="70000" oninput="syncEmiFromInput('price')" class="mt-2 w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:border-orange-500">
+                        </div>
+
+                        <!-- Down Payment -->
+                        <div>
+                            <div class="flex justify-between text-xs font-bold text-slate-700 mb-1.5">
+                                <label for="emiDownInput">ડાઉન પેમેન્ટ (Down Payment ₹)</label>
+                                <span id="emiDownLabel" class="text-emerald-600">₹0 (Zero Down)</span>
+                            </div>
+                            <input id="emiDownSlider" type="range" min="0" max="100000" step="500" value="0" oninput="syncEmiFromSlider('down')" class="w-full cursor-pointer">
+                            <input id="emiDownInput" type="number" min="0" max="250000" value="0" oninput="syncEmiFromInput('down')" class="mt-2 w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:border-orange-500">
+                        </div>
+
+                        <!-- Tenure Buttons -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-2">હપ્તાના મહિના (Tenure Months)</label>
+                            <div class="grid grid-cols-4 gap-2" id="tenureButtons">
+                                <button type="button" onclick="setTenure(6)" data-months="6" class="tenure-btn py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700">6 Mo</button>
+                                <button type="button" onclick="setTenure(12)" data-months="12" class="tenure-btn py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700">12 Mo</button>
+                                <button type="button" onclick="setTenure(18)" data-months="18" class="tenure-btn py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700">18 Mo</button>
+                                <button type="button" onclick="setTenure(24)" data-months="24" class="tenure-btn py-2.5 rounded-xl border-2 border-orange-500 bg-orange-50 text-xs font-extrabold text-orange-700">24 Mo</button>
+                            </div>
+                        </div>
+
+                        <!-- Interest Rate -->
+                        <div>
+                            <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                <label for="emiRateSlider">વ્યાજ દર (Interest Rate %)</label>
+                                <span id="emiRateLabel" class="text-slate-800">0% (No Cost EMI)</span>
+                            </div>
+                            <input id="emiRateSlider" type="range" min="0" max="18" step="0.5" value="0" oninput="calculateEMI()" class="w-full cursor-pointer">
+                        </div>
+                    </div>
+
+                    <button onclick="inquireEmiOnWhatsApp()" class="mt-5 w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition">
+                        <span>💬</span>
+                        <span>આ EMI પ્લાન WhatsApp પર પૂછો</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- ==================== TAB 3: STORE & CONTACT ==================== -->
+            <section id="tab-store" class="hidden space-y-4">
+                <!-- Store Profile Card -->
+                <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200/80 space-y-4">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-400 flex items-center justify-center text-2xl shadow-md">🏪</div>
+                        <div>
+                            <h2 class="font-extrabold text-slate-900 text-base">Shreeji Mobile Shop, Bodeli</h2>
+                            <p class="text-xs font-semibold text-orange-600">Owner: ભયલુ ભાઈ (Dhrumit Thakkar)</p>
+                            <p class="text-xs text-slate-500 mt-0.5">મહાદેવ હર 🙏 • Trusted Mobile Showroom</p>
+                        </div>
+                    </div>
+
+                    <!-- Social & Highlights Badges -->
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div class="bg-orange-50 border border-orange-100 rounded-2xl p-3">
+                            <p class="text-[11px] font-semibold text-orange-700">📸 Instagram Family</p>
+                            <p class="text-base font-extrabold text-slate-900 mt-0.5">277K+ Followers</p>
+                            <p class="text-[10px] text-slate-500">@shreeji_mobile_shop_bodeli</p>
+                        </div>
+                        <div class="bg-amber-50 border border-amber-100 rounded-2xl p-3">
+                            <p class="text-[11px] font-semibold text-amber-700">🏆 Happy Customers</p>
+                            <p class="text-base font-extrabold text-slate-900 mt-0.5">Winners & Gifts</p>
+                            <p class="text-[10px] text-slate-500">દરેક ખરીદી પર ખાસ સરપ્રાઈઝ</p>
+                        </div>
+                    </div>
+
+                    <!-- Store Details -->
+                    <div class="bg-slate-50 rounded-2xl p-3.5 space-y-2 text-xs text-slate-700 border border-slate-100">
+                        <div class="flex items-start gap-2">
+                            <span>📍</span>
+                            <p><strong>સરનામું:</strong> Shreeji Mobile Shop, Main Market / Station Road, Bodeli, Gujarat</p>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <span>⏰</span>
+                            <p><strong>સમય:</strong> સવારે 9:30 થી રાત્રે 9:00 વાગ્યા સુધી (દરરોજ ખુલ્લું)</p>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <span>💳</span>
+                            <p><strong>સુવિધા:</strong> Bajaj Finserv, IDFC, HDFC, SBI Cards & 0% Down Payment EMI</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Customer Inquiry Form -->
+                <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200/80 space-y-3">
+                    <h3 class="font-extrabold text-slate-900 text-sm">📩 સીધી પૂછપરછ મોકલો (Quick Inquiry)</h3>
+                    <input id="custName" type="text" placeholder="તમારું નામ (Your Name)" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-orange-500">
+                    <input id="custPhoneModel" type="text" placeholder="કયો ફોન કે ઓફર જોઈએ છે? (દા.ત. iPhone 16)" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-orange-500">
+                    <button onclick="sendCustomStoreInquiry()" class="w-full py-3 px-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold text-sm shadow-md transition">
+                        💬 WhatsApp પર મેસેજ મોકલો
+                    </button>
+                </div>
+            </section>
+
+            <!-- ==================== TAB 4: OWNER ADMIN ==================== -->
+            <section id="tab-admin" class="hidden space-y-4">
+                <!-- Login Gate -->
+                <div id="adminLoginBox" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80 text-center space-y-4">
+                    <div class="w-14 h-14 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center text-2xl mx-auto">🔒</div>
+                    <div>
+                        <h2 class="font-extrabold text-slate-900 text-base">દુકાનદાર લોગિન (Owner Admin)</h2>
+                        <p class="text-xs text-slate-500 mt-1">નવો મોબાઈલ કે ઓફર ઉમેરવા માટે Password નાખો</p>
+                    </div>
+                    <div class="max-w-[240px] mx-auto">
+                        <input id="adminPwInput" type="password" placeholder="Owner Password" onkeydown="if(event.key==='Enter')loginOwner()" class="w-full text-center font-bold text-base py-3 px-4 rounded-2xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-orange-500">
+                        <p id="demoHint" class="hidden text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl py-1.5 px-2.5 mt-2 font-medium">💡 Demo mode • Password: <strong>owner123</strong></p>
+                    </div>
+                    <button onclick="loginOwner()" class="w-full py-3 px-4 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm shadow-md shadow-orange-500/25 transition">Unlock Owner Panel 🔓</button>
+                </div>
+
+                <!-- Authenticated Owner Dashboard -->
+                <div id="adminDashboardBox" class="hidden space-y-4">
+                    <div class="bg-slate-900 text-white rounded-3xl p-4 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-amber-400 font-bold">✅ Owner Mode Active</p>
+                            <h3 class="font-extrabold text-sm mt-0.5">Shreeji Mobile Catalog Manager</h3>
+                        </div>
+                        <button onclick="logoutAdmin()" class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white">Lock 🔒</button>
+                    </div>
+
+                    <!-- Store WhatsApp Number Setting Card -->
+                    <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200/80 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-extrabold text-slate-900 text-sm">💬 દુકાનનો WhatsApp નંબર સેટ કરો</h3>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-700">Live Chat Target</span>
+                        </div>
+                        <p class="text-xs text-slate-500">કસ્ટમર WhatsApp બટન દબાવે ત્યારે આ નંબરની ચેટ ખુલશે (91 પછી 10 આંકડાનો નંબર):</p>
+                        <div class="flex gap-2">
+                            <input id="adminWhatsappInput" type="tel" maxlength="12" placeholder="919876543210" class="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:border-emerald-500">
+                            <button type="button" onclick="saveStoreWhatsapp()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition">
+                                Save નંબર
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Add New Phone Form -->
+                    <form onsubmit="addNewMobile(event)" class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200/80 space-y-3">
+                        <h3 class="font-extrabold text-slate-900 text-sm">➕ નવો મોબાઈલ ઉમેરો (Add Phone)</h3>
+                        
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 mb-1">બ્રાન્ડ (Brand)</label>
+                                <select id="newBrand" required class="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-orange-500">
+                                    <option value="Apple">Apple</option>
+                                    <option value="Samsung">Samsung</option>
+                                    <option value="Vivo">Vivo</option>
+                                    <option value="Oppo">Oppo</option>
+                                    <option value="OnePlus">OnePlus</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 mb-1">કિંમત (Price ₹)</label>
+                                <input id="newPrice" type="number" required min="1000" placeholder="દા.ત. 24999" class="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-orange-500">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">મોડેલનું નામ (Model Name)</label>
+                            <input id="newModel" type="text" required placeholder="દા.ત. Vivo V40 Pro 5G" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-orange-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">ફીચર્સ / સ્પેક્સ (RAM / Storage / Camera)</label>
+                            <input id="newSpecs" type="text" required placeholder="દા.ત. 8GB RAM • 256GB • 50MP ZEISS Camera" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-orange-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">ખાસ ઓફર ટેગ (Offer Badge)</label>
+                            <input id="newOffer" type="text" required placeholder="દા.ત. Free Neckband + 0% Down Payment" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-orange-500">
+                        </div>
+
+                        <button type="submit" class="w-full py-3 px-4 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm shadow-md transition">
+                            💾 લિસ્ટમાં ઉમેરો (Save Phone)
+                        </button>
+                    </form>
+
+                    <!-- Manage Existing Mobiles -->
+                    <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200/80 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-extrabold text-slate-900 text-sm">📋 હાલના મોબાઈલ્સ મેનેજ કરો</h3>
+                            <button onclick="resetDefaultCatalog()" class="text-[11px] font-bold text-orange-600 hover:underline">Reset Demo Data</button>
+                        </div>
+                        <div id="adminMobilesList" class="space-y-2.5">
+                            <!-- Admin list items injected via JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- BOTTOM NAVIGATION BAR (Mobile App Tab Bar) -->
+        <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white/95 backdrop-blur-md border-t border-slate-200 px-2 py-2 grid grid-cols-4 gap-1 z-40 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+            <button onclick="switchTab('mobiles')" id="nav-mobiles" class="nav-btn flex flex-col items-center justify-center py-1.5 px-1 rounded-2xl bg-orange-50 text-orange-600 transition">
+                <span class="text-lg leading-none">📱</span>
+                <span class="text-[10px] font-extrabold mt-1">Mobiles</span>
+            </button>
+            <button onclick="switchTab('emi')" id="nav-emi" class="nav-btn flex flex-col items-center justify-center py-1.5 px-1 rounded-2xl text-slate-500 hover:bg-slate-50 transition">
+                <span class="text-lg leading-none">🧮</span>
+                <span class="text-[10px] font-bold mt-1">EMI Calc</span>
+            </button>
+            <button onclick="switchTab('store')" id="nav-store" class="nav-btn flex flex-col items-center justify-center py-1.5 px-1 rounded-2xl text-slate-500 hover:bg-slate-50 transition">
+                <span class="text-lg leading-none">🏪</span>
+                <span class="text-[10px] font-bold mt-1">Store Info</span>
+            </button>
+            <button onclick="switchTab('admin')" id="nav-admin" class="nav-btn flex flex-col items-center justify-center py-1.5 px-1 rounded-2xl text-slate-500 hover:bg-slate-50 transition">
+                <span class="text-lg leading-none">🔒</span>
+                <span class="text-[10px] font-bold mt-1">Owner</span>
+            </button>
+        </nav>
+
+    </div>
+
+    <script>
+        // ==================== INITIAL DATA & STATE ====================
+        // 📌 અહીં દુકાનનો અસલી WhatsApp નંબર સેટ કરો: '91' પછી 10 આંકડાનો મોબાઈલ નંબર લખો (દા.ત. "919876543210")
+        // Replace the 10-digit mobile number after '91' with Shreeji Mobile Shop's official WhatsApp number
+        const SHOP_WHATSAPP = "919876543210";
+
+        // ====== FIREBASE CONFIG: દરેક દુકાન માટે તેનું પોતાનું Firebase project બનાવી અહીં paste કરો ======
+        // ખાલી રાખો તો app DEMO mode માં ચાલશે (data ફક્ત તે phone માં, owner password: owner123)
+        const FIREBASE_CONFIG = { apiKey: "", authDomain: "", projectId: "", appId: "" };
+        // Firebase > Authentication માં આ email સાથે owner user બનાવો (password = owner નો password)
+        const OWNER_EMAIL = "owner@shreejimobile.com";
+        const DEMO_PW = "owner123";
+        const CLOUD = !!FIREBASE_CONFIG.apiKey && typeof firebase !== 'undefined';
+
+        const STORAGE_KEY = 'shreeji_mobile_bodeli_catalog_v1';
+        const WHATSAPP_STORAGE_KEY = 'shreeji_mobile_bodeli_whatsapp_v1';
+
+        const defaultMobiles = [
+            {
+                id: 1,
+                brand: 'Apple',
+                model: 'Apple iPhone 16 (128GB)',
+                specs: 'A18 Chip • 48MP Fusion Camera • Dynamic Island',
+                price: 74900,
+                offer: '🍎 24 હપ્તા • 0% Down Payment + Free Cover & Glass',
+                icon: '🍏'
+            },
+            {
+                id: 2,
+                brand: 'Apple',
+                model: 'Apple iPhone 15 (128GB)',
+                specs: 'A16 Bionic • 48MP Main Camera • USB-C',
+                price: 62900,
+                offer: '🔥 Best Seller • ₹2,621/mo 0% EMI Available',
+                icon: '📱'
+            },
+            {
+                id: 3,
+                brand: 'Samsung',
+                model: 'Samsung Galaxy S24 Ultra 5G',
+                specs: '12GB RAM • 256GB • 200MP Quad Telephoto • S-Pen',
+                price: 119999,
+                offer: '🎁 Instant Exchange Bonus + Free Wireless Charger',
+                icon: '✨'
+            },
+            {
+                id: 4,
+                brand: 'Samsung',
+                model: 'Samsung Galaxy A55 5G',
+                specs: '8GB RAM • 256GB • Super AMOLED 120Hz • IP67',
+                price: 36999,
+                offer: '💳 Zero Down Payment + Free Buds Offer',
+                icon: '📲'
+            },
+            {
+                id: 5,
+                brand: 'Vivo',
+                model: 'Vivo V40 Pro 5G',
+                specs: '12GB RAM • 256GB • 50MP ZEISS Portrait • 5500mAh',
+                price: 49999,
+                offer: '📸 Wedding Portrait King • 10% Cashback',
+                icon: '📷'
+            },
+            {
+                id: 6,
+                brand: 'Oppo',
+                model: 'Oppo Reno 12 Pro 5G',
+                specs: '12GB RAM • 256GB • AI Eraser 2.0 • 80W SUPERVOOC',
+                price: 34999,
+                offer: '⚡ Free Smart Watch / Neckband Gift Pack',
+                icon: '🌟'
+            },
+            {
+                id: 7,
+                brand: 'OnePlus',
+                model: 'OnePlus Nord 4 5G',
+                specs: '8GB RAM • 256GB • Snapdragon 7+ Gen 3 • 100W Charge',
+                price: 29999,
+                offer: '🚀 Metal Unibody • Easy 12/18 Months EMI',
+                icon: '⚡'
+            }
+        ];
+
+        let mobiles = [];
+        let selectedBrand = 'All';
+        let selectedTenure = 24;
+        let isAdminUnlocked = false;
+        let currentWaMessage = '';
+        let activeShopWhatsapp = SHOP_WHATSAPP;
+
+        // ==================== STORAGE HELPERS ====================
+        let DB, AUTH;
+        const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const okWa = n => /^91\d{10}$/.test(n || '');
+
+        function loadStoreWhatsapp() { activeShopWhatsapp = SHOP_WHATSAPP; }
+        function saveLocal() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(mobiles)); } catch (e) {} }
+        const writeCatalog = items => DB.collection('catalog').doc('main').set({ items }, { merge: true });
+        function refreshAll() { renderBrandPills(); renderMobiles(); renderAdminMobiles(); }
+
+        async function loadCatalog() {
+            if (!CLOUD) {
+                try { const x = localStorage.getItem(STORAGE_KEY); mobiles = x ? JSON.parse(x) : [...defaultMobiles]; } catch (e) { mobiles = [...defaultMobiles]; }
+                try { const w = localStorage.getItem(WHATSAPP_STORAGE_KEY); if (okWa(w)) activeShopWhatsapp = w; } catch (e) {}
+                return;
+            }
+            firebase.initializeApp(FIREBASE_CONFIG);
+            DB = firebase.firestore(); AUTH = firebase.auth();
+            DB.collection('catalog').doc('main').onSnapshot(d => {
+                const x = d.exists ? d.data() : {};
+                mobiles = Array.isArray(x.items) ? x.items : [];
+                if (okWa(x.whatsapp)) {
+                    activeShopWhatsapp = x.whatsapp;
+                    const i = document.getElementById('adminWhatsappInput'); if (i) i.value = activeShopWhatsapp;
+                }
+                refreshAll();
+            }, e => showToast('Data load ન થયો: ' + (e.code || ''), '⚠️'));
+            AUTH.onAuthStateChanged(u => (u && u.email === OWNER_EMAIL) ? openOwnerPanel() : closeOwnerPanel());
+        }
+
+        async function saveStoreWhatsapp() {
+            const cleaned = (document.getElementById('adminWhatsappInput').value || '').replace(/\D/g, '');
+            if (!okWa(cleaned)) { showToast('91 સાથે 12 આંકડાનો સાચો નંબર નાખો (દા.ત. 919876543210)', '⚠️'); return; }
+            try {
+                if (CLOUD) await DB.collection('catalog').doc('main').set({ whatsapp: cleaned }, { merge: true });
+                else localStorage.setItem(WHATSAPP_STORAGE_KEY, cleaned);
+                activeShopWhatsapp = cleaned;
+                showToast(`WhatsApp નંબર +${cleaned} સેટ થઈ ગયો!`, '💬');
+            } catch (e) { showToast('Save ન થયું (' + (e.code || 'error') + ')', '⚠️'); }
+        }
+
+        async function resetDefaultCatalog() {
+            try {
+                if (CLOUD) {
+                    await writeCatalog([...defaultMobiles]);
+                } else { mobiles = [...defaultMobiles]; saveLocal(); refreshAll(); }
+                showToast('ડેમો લિસ્ટ ઉમેરાઈ ગયું!', '🔄');
+            } catch (e) { showToast('ન થયું (' + (e.code || 'error') + ')', '⚠️'); }
+        }
+
+        // ==================== NAVIGATION & UI ====================
+        function switchTab(tabName) {
+            const tabs = ['mobiles', 'emi', 'store', 'admin'];
+            tabs.forEach(t => {
+                const section = document.getElementById(`tab-${t}`);
+                const btn = document.getElementById(`nav-${t}`);
+                if (t === tabName) {
+                    section.classList.remove('hidden');
+                    btn.classList.add('bg-orange-50', 'text-orange-600');
+                    btn.classList.remove('text-slate-500');
+                } else {
+                    section.classList.add('hidden');
+                    btn.classList.remove('bg-orange-50', 'text-orange-600');
+                    btn.classList.add('text-slate-500');
+                }
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function formatINR(num) {
+            return '₹' + Math.round(num).toLocaleString('en-IN');
+        }
+
+        let toastTimer;
+        function showToast(msg, icon = '✅') {
+            const box = document.getElementById('toastBox');
+            document.getElementById('toastMessage').textContent = msg;
+            document.getElementById('toastIcon').textContent = icon;
+            box.classList.remove('hidden');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                box.classList.add('hidden');
+            }, 2800);
+        }
+
+        // ==================== MOBILES CATALOG & FILTERS ====================
+        function renderBrandPills() {
+            const brands = ['All', 'Apple', 'Samsung', 'Vivo', 'Oppo', 'OnePlus'];
+            const container = document.getElementById('brandPills');
+            container.innerHTML = brands.map(brand => {
+                const active = selectedBrand === brand;
+                return `
+                    <button onclick="selectBrand('${brand}')" class="px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition ${
+                        active
+                        ? 'bg-slate-900 text-amber-400 shadow-sm'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:border-orange-300'
+                    }">
+                        ${brand === 'All' ? '🔥 All Phones' : brand}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function selectBrand(brand) {
+            selectedBrand = brand;
+            renderBrandPills();
+            renderMobiles();
+        }
+
+        function renderMobiles() {
+            const query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+            const container = document.getElementById('mobilesList');
+
+            const filtered = mobiles.filter(item => {
+                const matchBrand = selectedBrand === 'All' || item.brand.toLowerCase() === selectedBrand.toLowerCase();
+                const matchQuery = item.model.toLowerCase().includes(query) ||
+                                   item.brand.toLowerCase().includes(query) ||
+                                   item.specs.toLowerCase().includes(query);
+                return matchBrand && matchQuery;
+            });
+
+            document.getElementById('mobileCount').textContent = `${filtered.length} Models`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-3xl p-8 text-center border border-slate-200">
+                        <p class="text-3xl mb-2">🔍</p>
+                        <p class="font-bold text-slate-800 text-sm">કોઈ મોબાઈલ મળ્યો નથી</p>
+                        <p class="text-xs text-slate-500 mt-1">બીજી બ્રાન્ડ અથવા નામ સર્ચ કરીને જુઓ</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(phone => {
+                const estMonthly24 = Math.round(phone.price / 24);
+                return `
+                    <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-200/80 hover:border-orange-300 transition">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-start gap-3">
+                                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-50 to-amber-100 border border-orange-200/60 flex items-center justify-center text-2xl flex-shrink-0">
+                                    ${phone.icon || '📱'}
+                                </div>
+                                <div>
+                                    <span class="inline-block text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">${esc(phone.brand)}</span>
+                                    <h3 class="font-extrabold text-slate-900 text-sm sm:text-base mt-1 leading-snug">${esc(phone.model)}</h3>
+                                    <p class="text-xs text-slate-500 mt-0.5">${esc(phone.specs)}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Offer Pill -->
+                        <div class="mt-3 bg-amber-50 border border-amber-200/70 rounded-xl px-3 py-1.5 text-[11px] font-bold text-amber-900">
+                            ${esc(phone.offer)}
+                        </div>
+
+                        <!-- Price & EMI Badge Row -->
+                        <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+                            <div>
+                                <p class="text-[10px] font-semibold text-slate-400">Special Store Price</p>
+                                <p class="text-lg font-extrabold text-slate-900">${formatINR(phone.price)}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="inline-block px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-extrabold">
+                                    EMI: ${formatINR(estMonthly24)}/mo*
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="mt-3 grid grid-cols-2 gap-2">
+                            <button onclick="openPhoneInEmi(${phone.price}, '${phone.model.replace(/'/g, "\\'")}')" class="py-2.5 px-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center gap-1.5 transition">
+                                <span>🧮</span>
+                                <span>Calculate EMI</span>
+                            </button>
+                            <button onclick="inquirePhoneOnWhatsApp('${phone.model.replace(/'/g, "\\'")}', ${phone.price})" class="py-2.5 px-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition">
+                                <span>💬</span>
+                                <span>WhatsApp Inquiry</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ==================== EMI CALCULATOR LOGIC ====================
+        function openPhoneInEmi(price, modelName) {
+            document.getElementById('emiPriceInput').value = price;
+            document.getElementById('emiPriceSlider').value = Math.min(price, 160000);
+            document.getElementById('emiDownInput').value = 0;
+            document.getElementById('emiDownSlider').value = 0;
+            setTenure(24);
+            switchTab('emi');
+            showToast(`${modelName} માટે EMI ગણતરી ખુલી ગઈ`, '🧮');
+        }
+
+        function syncEmiFromSlider(type) {
+            if (type === 'price') {
+                const val = Number(document.getElementById('emiPriceSlider').value);
+                document.getElementById('emiPriceInput').value = val;
+            } else {
+                const val = Number(document.getElementById('emiDownSlider').value);
+                document.getElementById('emiDownInput').value = val;
+            }
+            calculateEMI();
+        }
+
+        function syncEmiFromInput(type) {
+            if (type === 'price') {
+                const val = Math.max(0, Number(document.getElementById('emiPriceInput').value));
+                document.getElementById('emiPriceSlider').value = Math.min(val, 160000);
+            } else {
+                const val = Math.max(0, Number(document.getElementById('emiDownInput').value));
+                document.getElementById('emiDownSlider').value = Math.min(val, 100000);
+            }
+            calculateEMI();
+        }
+
+        function setTenure(months) {
+            selectedTenure = months;
+            document.querySelectorAll('.tenure-btn').forEach(btn => {
+                const m = Number(btn.getAttribute('data-months'));
+                if (m === months) {
+                    btn.className = 'tenure-btn py-2.5 rounded-xl border-2 border-orange-500 bg-orange-50 text-xs font-extrabold text-orange-700';
+                } else {
+                    btn.className = 'tenure-btn py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700';
+                }
+            });
+            calculateEMI();
+        }
+
+        function calculateEMI() {
+            const price = Math.max(0, Number(document.getElementById('emiPriceInput').value) || 0);
+            let down = Math.max(0, Number(document.getElementById('emiDownInput').value) || 0);
+            if (down > price) down = price;
+
+            const rate = Number(document.getElementById('emiRateSlider').value) || 0;
+            const loanAmount = Math.max(0, price - down);
+
+            let monthlyEmi = 0;
+            if (loanAmount > 0) {
+                if (rate === 0) {
+                    monthlyEmi = loanAmount / selectedTenure;
+                } else {
+                    const r = rate / 12 / 100;
+                    const n = selectedTenure;
+                    monthlyEmi = (loanAmount * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+                }
+            }
+
+            document.getElementById('emiPriceLabel').textContent = formatINR(price);
+            document.getElementById('emiDownLabel').textContent = down === 0 ? '₹0 (Zero Down)' : formatINR(down);
+            document.getElementById('emiRateLabel').textContent = rate === 0 ? '0% (No Cost EMI)' : `${rate}% p.a.`;
+
+            document.getElementById('emiMonthlyDisplay').textContent = formatINR(monthlyEmi);
+            document.getElementById('emiSummaryPrice').textContent = formatINR(price);
+            document.getElementById('emiSummaryDown').textContent = formatINR(down);
+            document.getElementById('emiSummaryLoan').textContent = formatINR(loanAmount);
+        }
+
+        // ==================== WHATSAPP INQUIRY MODAL ====================
+        function openWaModal(messageText) {
+            currentWaMessage = messageText;
+            document.getElementById('waPreviewText').textContent = messageText;
+            const encoded = encodeURIComponent(messageText);
+            document.getElementById('waDirectLink').href = `https://wa.me/${activeShopWhatsapp}?text=${encoded}`;
+            document.getElementById('waModal').classList.remove('hidden');
+        }
+
+        function closeWaModal() {
+            document.getElementById('waModal').classList.add('hidden');
+        }
+
+        function copyWaMessage() {
+            try {
+                const tempArea = document.createElement('textarea');
+                tempArea.value = currentWaMessage;
+                document.body.appendChild(tempArea);
+                tempArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempArea);
+                showToast('મેસેજ કોપી થઈ ગયો છે!', '📋');
+            } catch (e) {
+                showToast('કોપી કરવામાં મુશ્કેલી આવી', '⚠️');
+            }
+        }
+
+        function inquirePhoneOnWhatsApp(model, price) {
+            const msg = `મહાદેવ હર 🙏 Shreeji Mobile Shop, Bodeli!\nમને *${model}* (કિંમત: ${formatINR(price)}) ની આજની બેસ્ટ ઓફર અને EMI વિગત જાણવી છે.`;
+            openWaModal(msg);
+        }
+
+        function inquireEmiOnWhatsApp() {
+            const price = document.getElementById('emiSummaryPrice').textContent;
+            const down = document.getElementById('emiSummaryDown').textContent;
+            const monthly = document.getElementById('emiMonthlyDisplay').textContent;
+            const msg = `મહાદેવ હર 🙏 Shreeji Mobile Shop, Bodeli!\nમેં તમારી એપમાં EMI ચેક કર્યો છે:\n• ફોન કિંમત: ${price}\n• ડાઉન પેમેન્ટ: ${down}\n• મુદત: ${selectedTenure} મહિના\n• અંદાજિત હપ્તો: ${monthly}/મહિનો\nઆ પ્લાન માટે કયા ડોક્યુમેન્ટ્સ જોઈશે?`;
+            openWaModal(msg);
+        }
+
+        function sendCustomStoreInquiry() {
+            const name = document.getElementById('custName').value.trim() || 'Customer';
+            const model = document.getElementById('custPhoneModel').value.trim() || 'નવો મોબાઈલ અને ઓફર';
+            const msg = `મહાદેવ હર 🙏 Shreeji Mobile Shop, Bodeli!\nમારું નામ *${name}* છે. મારે *${model}* વિશે ભાવ અને ઓફરની માહિતી જોઈએ છે.`;
+            openWaModal(msg);
+        }
+
+        // ==================== OWNER ADMIN PANEL ====================
+        function openOwnerPanel() {
+            isAdminUnlocked = true;
+            document.getElementById('adminLoginBox').classList.add('hidden');
+            document.getElementById('adminDashboardBox').classList.remove('hidden');
+            document.getElementById('adminWhatsappInput').value = activeShopWhatsapp;
+            renderAdminMobiles();
+        }
+        function closeOwnerPanel() {
+            isAdminUnlocked = false;
+            document.getElementById('adminDashboardBox').classList.add('hidden');
+            document.getElementById('adminLoginBox').classList.remove('hidden');
+        }
+        async function loginOwner() {
+            const input = document.getElementById('adminPwInput');
+            const pw = input.value;
+            if (!pw) return;
+            try {
+                if (CLOUD) await AUTH.signInWithEmailAndPassword(OWNER_EMAIL, pw);
+                else if (pw !== DEMO_PW) throw new Error('bad');
+                else openOwnerPanel();
+                input.value = '';
+                showToast('સ્વાગત છે ભયલુ ભાઈ! Owner Panel ખુલી ગયું', '🔓');
+            } catch (e) { showToast('ખોટો Password!', '❌'); }
+        }
+        function logoutAdmin() {
+            if (CLOUD) AUTH.signOut(); else closeOwnerPanel();
+            showToast('Owner Panel લોક થઈ ગયું', '🔒');
+            switchTab('mobiles');
+        }
+        async function changeOwnerPw() {
+            const p = prompt('નવો Password (ઓછામાં ઓછા 6 અક્ષર):');
+            if (!p) return;
+            if (p.length < 6) { showToast('ઓછામાં ઓછા 6 અક્ષર રાખો', '⚠️'); return; }
+            try { await AUTH.currentUser.updatePassword(p); showToast('Password બદલાઈ ગયો', '✅'); }
+            catch (e) { showToast('ફરી login કરીને પ્રયત્ન કરો', '⚠️'); }
+        }
+
+        async function addNewMobile(event) {
+            event.preventDefault();
+            if (!isAdminUnlocked) return;
+            const brand = document.getElementById('newBrand').value;
+            const price = Number(document.getElementById('newPrice').value);
+            const model = document.getElementById('newModel').value.trim();
+            const specs = document.getElementById('newSpecs').value.trim();
+            const offer = document.getElementById('newOffer').value.trim();
+            if (!model || !price) return;
+            const id = Date.now();
+            const entry = { id, ts: id, brand, model, specs, price, offer, icon: brand === 'Apple' ? '🍎' : '📱' };
+            const form = event.target;
+            try {
+                if (CLOUD) await writeCatalog([entry, ...mobiles]);
+                else { mobiles.unshift(entry); saveLocal(); refreshAll(); }
+                form.reset();
+                showToast(`${model} સફળતાપૂર્વક ઉમેરાઈ ગયો!`, '🎉');
+            } catch (e) { showToast('Save ન થયું (' + (e.code || 'error') + ')', '⚠️'); }
+        }
+
+        async function deleteMobile(id) {
+            if (!isAdminUnlocked) return;
+            try {
+                if (CLOUD) await writeCatalog(mobiles.filter(m => m.id !== id));
+                else { mobiles = mobiles.filter(m => m.id !== id); saveLocal(); refreshAll(); }
+                showToast('મોબાઈલ લિસ્ટમાંથી દૂર કરવામાં આવ્યો', '🗑️');
+            } catch (e) { showToast('Delete ન થયું (' + (e.code || 'error') + ')', '⚠️'); }
+        }
+
+        function renderAdminMobiles() {
+            const container = document.getElementById('adminMobilesList');
+            if (mobiles.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-3">લિસ્ટ ખાલી છે. ઉપરથી નવો ફોન ઉમેરો.</p>`;
+                return;
+            }
+            container.innerHTML = mobiles.map(item => `
+                <div class="flex items-center justify-between gap-2 p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <div class="min-w-0">
+                        <p class="font-bold text-slate-900 text-xs truncate">${esc(item.model)}</p>
+                        <p class="text-[11px] font-semibold text-orange-600">${esc(item.brand)} • ${formatINR(item.price)}</p>
+                    </div>
+                    <button onclick="deleteMobile(${item.id})" class="px-2.5 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs font-bold flex-shrink-0 transition">
+                        Delete
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // ==================== INITIALIZE ON LOAD ====================
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('shreeji-sw.js').catch(() => {}); }
+
+        window.onload = async function () {
+            loadStoreWhatsapp();
+            await loadCatalog();
+            refreshAll();
+            calculateEMI();
+            if (!CLOUD) document.getElementById('demoHint').classList.remove('hidden');
+            if (CLOUD) {
+                const list = document.getElementById('adminMobilesList');
+                const pb = document.createElement('button');
+                pb.className = 'w-full py-2.5 rounded-2xl bg-slate-100 text-slate-700 font-bold text-xs';
+                pb.textContent = '🔑 Password બદલો';
+                pb.onclick = changeOwnerPw;
+                list.parentNode.insertBefore(pb, list);
+            }
+            const tip = document.createElement('div');
+            tip.className = 'mb-3 flex items-center justify-between gap-2 text-[11px] bg-orange-50 border border-orange-200 text-orange-800 rounded-2xl px-3 py-2';
+            tip.innerHTML = '<span>📲 Chrome ⋮ menu → <b>Add to Home screen</b> (iPhone: Share → Add to Home Screen)</span><button onclick="this.parentNode.remove()" class="font-bold">✕</button>';
+            const tm = document.getElementById('tab-mobiles');
+            tm.insertBefore(tip, tm.firstChild);
+        };
+    </script>
+</body>
+</html>
